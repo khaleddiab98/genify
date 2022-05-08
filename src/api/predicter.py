@@ -5,6 +5,9 @@ import subprocess
 import csv
 import json
 import os
+from pathlib import Path
+
+root = Path(__file__).parent.parent.parent
 
 #class with a POST method to handle POST HTTP requests
 class Run_Model(Resource):
@@ -40,8 +43,8 @@ class Run_Model(Resource):
                 "segmento": request.args.get('segment')
         }]
 
-        #open test_api.csv (input file) and write the field names and their desired values.
-        with open("files\\test_api.csv", 'w', encoding='UTF-8', newline='') as f:
+        #open test_api.csv (in(put file) and write the field names and their desired values.
+        with open(os.path.join(root, "files\\test_api.csv") , 'w', encoding='UTF-8', newline='') as f:
             write = csv.DictWriter(f, fieldnames = field_names)
             write.writeheader()
             write.writerows(rows)
@@ -52,7 +55,7 @@ class Run_Model(Resource):
         predict()
 
         #open sub_xgb_new.csv (output file) for reading and save the prediction output.
-        file = open('sub_xgb_new.csv')
+        file = open(os.path.join(root, "sub_xgb_new.csv"))
         reader = csv.reader(file)
 
         headers = []
@@ -106,9 +109,9 @@ class Run_Model(Resource):
         }
 
         #initialize the output JSON file.
-        with open("./files/output.json", "w") as f:
+        with open(os.path.join(root, "files\output.json"), "w") as f:
             temp = json.dumps(result)
             f.write(temp)
         f.close()
     
-        return send_file(os.path.abspath("./files/output.json"))
+        return send_file(os.path.abspath(os.path.join(root, "files\output.json")))

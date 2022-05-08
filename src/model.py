@@ -9,7 +9,11 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 import json
+import os
 from sklearn import preprocessing, ensemble
+from pathlib import Path
+
+root = Path(__file__).parent.parent
 
 mapping_dict = {
 'ind_empleado'  : {-99:0, 'N':1, 'B':2, 'F':3, 'A':4, 'S':5},
@@ -158,12 +162,12 @@ def runXGB(train_X, train_y, seed_val=0):
 #added method to call the saved trained model without having to go through model training.
 def predict():
 	#get the custom dictionary that was saved during model training.
-	f = open("./files/dict.txt","r")
+	f = open(os.path.join(root, "files\dict.txt"), "r")
 	cust_dict = json.loads(f.read())
 	f.close()
 
 	#open test csv file and save the input.
-	test_file = open("./files/test_api.csv")
+	test_file = open(os.path.join(root, "files\\test_api.csv"))
 	x_vars_list, y_vars_list, cust_dict = processData(test_file, cust_dict)
 	test_X = np.array(x_vars_list)
 	del x_vars_list
@@ -172,7 +176,7 @@ def predict():
 	#load the trained model and process the input.
 	print("Predicting..")
 	model = xgb.Booster()
-	model.load_model("./files/model.json")
+	model.load_model(os.path.join(root, "files\model.json"))
 	xgtest = xgb.DMatrix(test_X)
 	preds = model.predict(xgtest)
 	del test_X, xgtest
@@ -183,24 +187,23 @@ def predict():
 	target_cols = np.array(target_cols)
 	preds = np.argsort(preds, axis=1)
 	preds = np.fliplr(preds)[:,:7]
-	test_id = np.array(pd.read_csv("./files/test_api.csv", usecols=['ncodpers'])['ncodpers'])
+	test_id = np.array(pd.read_csv(os.path.join(root, "files\\test_api.csv"), usecols=['ncodpers'])['ncodpers'])
 	final_preds = [" ".join(list(target_cols[pred])) for pred in preds]
 	out_df = pd.DataFrame({'ncodpers':test_id, 'added_products':final_preds})
-	out_df.to_csv('sub_xgb_new.csv', index=False)
+	out_df.to_csv(os.path.join(root, "sub_xgb_new.csv"), index=False)
 	print("Prediction Status: Success")
 
 
 if __name__ == "__main__":
 	start_time = datetime.datetime.now()
-	data_path = "./files/"
-	train_file =  open(data_path + "train_ver2.csv")
+	train_file =  open(os.path.join(root, "files\\train_ver2.csv"))
 	x_vars_list, y_vars_list, cust_dict = processData(train_file, {})
 	train_X = np.array(x_vars_list)
 	train_y = np.array(y_vars_list)
 	print(np.unique(train_y))
 
 	#save the custom dictionary generated from model training for usage when running the trained model later on.
-	f = open("./files/dict.txt","w")
+	f = open(os.path.join(root, "files\dict.txt"),"w")
 	f.write( json.dumps(cust_dict))
 	f.close()
 
@@ -208,7 +211,7 @@ if __name__ == "__main__":
 	train_file.close()
 	print(train_X.shape, train_y.shape)
 	print(datetime.datetime.now()-start_time)
-	test_file = open(data_path + "test_api.csv")
+	test_file = open(os.path.join(root, "files\\test_api.csv"))
 	x_vars_list, y_vars_list, cust_dict = processData(test_file, cust_dict)
 	test_X = np.array(x_vars_list)
 	del x_vars_list
@@ -219,7 +222,7 @@ if __name__ == "__main__":
 	print("Building model..")
 	model = runXGB(train_X, train_y, seed_val=0)
 	#save the trained model to be used later on without having to go through the notion of training the model.
-	model.save_model("./files/model.json")
+	model.save_model(os.path.join(root, "files\model.json"))
 	del train_X, train_y
 	
 	print("Predicting..")
@@ -232,9 +235,9 @@ if __name__ == "__main__":
 	target_cols = np.array(target_cols)
 	preds = np.argsort(preds, axis=1)
 	preds = np.fliplr(preds)[:,:7]
-	test_id = np.array(pd.read_csv(data_path + "test_api.csv", usecols=['ncodpers'])['ncodpers'])
+	test_id = np.array(pd.read_csv(os.path.join(root, "files\\test_api.csv"), usecols=['ncodpers'])['ncodpers'])
 	final_preds = [" ".join(list(target_cols[pred])) for pred in preds]
 	out_df = pd.DataFrame({'ncodpers':test_id, 'added_products':final_preds})
-	out_df.to_csv('sub_xgb_new.csv', index=False)
+	out_df.to_csv(os.path.join(root, "sub_xgb_new.csv"), index=False)
 	print(datetime.datetime.now()-start_time)
 
